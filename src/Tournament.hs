@@ -94,9 +94,10 @@ updatePlayerBalance delta playerId = runDB $ do
             DB.insertKey playerId $ Player delta
 
 updatePlayersBalanciesPortional' :: Balance -> [PlayerId] -> Query ()
-updatePlayersBalanciesPortional' delta playersIds = do
-    let personalDelta = delta / (fromIntegral $ length playersIds)
+updatePlayersBalanciesPortional' delta playersIds =
     DB.updateWhere [PlayerId <-. playersIds] [PlayerBalance +=. personalDelta]
+  where
+    personalDelta = delta / (fromIntegral $ length playersIds)
 
 -- Get array of all values for query param
 getMultipleStringParam :: Text -> Scotty.ActionM [String]
