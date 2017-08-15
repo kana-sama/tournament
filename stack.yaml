@@ -64,3 +64,19 @@ extra-package-dbs: []
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+image:
+  # YOU NEED A `container` YAML SECTION FOR `stack image container`
+  container:
+    # YOU NEED A BASE IMAGE NAME. STACK LAYERS EXES ON TOP OF
+    # THE BASE IMAGE. PREPARE YOUR PROJECT IMAGE IN ADVANCE. PUT
+    # ALL YOUR RUNTIME DEPENDENCIES IN THE IMAGE.
+    base: "ubuntu"
+    # YOU CAN OPTIONALY NAME THE IMAGE. STACK WILL USE THE PROJECT
+    # DIRECTORY NAME IF YOU LEAVE OUT THIS OPTION.
+    name: "kana/tournament"
+    # OPTIONALLY SPECIFY A LIST OF EXECUTABLES. STACK WILL CREATE
+    # A TAGGED IMAGE FOR EACH IN THE LIST. THESE IMAGES WILL HAVE
+    # THEIR RESPECTIVE "ENTRYPOINT" SET.
+    entrypoints:
+      - tournament-exe
