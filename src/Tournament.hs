@@ -24,6 +24,7 @@ import qualified Database.Persist.Sqlite as DB
 import qualified Web.Scotty as Scotty
 import qualified Network.HTTP.Types.Status as HTTPStatus
 
+
 -- Database model
 
 type Query a = DB.SqlPersistT (NoLoggingT (ResourceT IO)) a
@@ -97,15 +98,13 @@ updatePlayersBalanciesPortional' :: Balance -> [PlayerId] -> Query ()
 updatePlayersBalanciesPortional' delta playersIds =
     DB.updateWhere [PlayerId <-. playersIds] [PlayerBalance +=. personalDelta]
   where
-    personalDelta = delta / (fromIntegral $ length playersIds)
+    personalDelta = delta / fromIntegral (length playersIds)
 
 -- Get array of all values for query param
 getMultipleStringParam :: Text -> Scotty.ActionM [String]
 getMultipleStringParam key = do
     params <- Scotty.params
-    return $ map (unpack . snd)
-           $ filter ((== key) . fst)
-           $ params
+    return $ map (unpack . snd) . filter ((== key) . fst) $ params
 
 
 -- Take points from player/Fund points to player
@@ -168,7 +167,7 @@ handleGetBalance = do
 -- Join tournament
 
 createParticipation' :: TournamentId -> PlayerId -> [PlayerId] -> Query ()
-createParticipation' tournamentId playerId backersIds = do
+createParticipation' tournamentId playerId backersIds =
     DB.insert_ $ Participation tournamentId playerId backersIds
 
 takeDistributedDeposit' :: TournamentId -> [PlayerId] -> Query ()
@@ -188,9 +187,9 @@ handleJoinTournament = do
 
 -- Finish tournament
 
-finishTournament :: TournamentId -> [(PlayerId, Balance)] -> IO ()
-finishTournament tournamentId results = runDB $ do
-    for_ results $ \(playerId, prize) -> do
+finishTournament :: Result -> IO ()
+finishTournament (Result tournamentId winners) = runDB $ do
+    for_ winners $ \(Winner playerId prize) -> do
         Participation _ _ backersIds <- getParticipation playerId
         updatePlayersBalanciesPortional' prize (playerId : backersIds)
     DB.deleteCascade tournamentId
@@ -204,11 +203,8 @@ finishTournament tournamentId results = runDB $ do
 
 handleFinishTournament :: Scotty.ActionM ()
 handleFinishTournament = do
-    Result tournamentId results <- Scotty.jsonData :: Scotty.ActionM Result
-    liftIO $ finishTournament tournamentId (map unWinner results)
-  where
-    unWinner :: Winner -> (PlayerId, Balance)
-    unWinner (Winner playerId prize) = (playerId, prize)
+    result <- Scotty.jsonData :: Scotty.ActionM Result
+    liftIO $ finishTournament result
 
 
 -- Router
